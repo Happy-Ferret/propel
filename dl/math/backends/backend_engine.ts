@@ -184,7 +184,7 @@ export class BackendEngine {
             'leaks.');
       }
     }
-    this.activeScope.track.push(result);
+    //this.activeScope.track.push(result);
     return result;
   }
 

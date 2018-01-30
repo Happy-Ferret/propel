@@ -26,7 +26,7 @@ import * as broadcast_util from './broadcast_util';
 import * as concat_util from './concat_util';
 import * as conv_util from './conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar} from './ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataId, DataType, DataTypeMap, NDArray, Rank, RankMap, Scalar} from './ndarray';
 import * as slice_util from './slice_util';
 import {SumTypes} from './types';
 
@@ -41,7 +41,7 @@ export interface NDArrayManager {
 
 export class NDArrayMath implements NDArrayManager {
   protected backendEngine: BackendEngine;
-  private registeredArrays = new Map<number, number>();
+  private registeredArrays: WeakMap<DataId, number> = new WeakMap();
   private backend: MathBackend;
   private customBackend = false;
 
@@ -50,7 +50,7 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   getNumArrays() {
-    return this.registeredArrays.size;
+    return 0; // TODO this.registeredArrays.size;
   }
 
   register(a: NDArray): void {
@@ -65,18 +65,18 @@ export class NDArrayMath implements NDArrayManager {
   }
 
   writePixels(
-      dataId: number,
+      dataId: DataId,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     this.backend.writePixels(dataId, pixels, numChannels);
   }
-  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
+  write<D extends DataType>(dataId: DataId, values: DataTypeMap[D]): void {
     this.backend.write(dataId, values);
   }
-  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+  readSync<D extends DataType>(dataId: DataId): DataTypeMap[D] {
     return this.backend.readSync(dataId);
   }
-  read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+  read<D extends DataType>(dataId: DataId): Promise<DataTypeMap[D]> {
     return this.backend.read(dataId);
   }
 
@@ -2407,7 +2407,7 @@ export class NDArrayMath implements NDArrayManager {
     throw new Error(`Error in norm: invalid axis: ${axis}`);
   }
 
-  disposeData(dataId: number): void {
+  disposeData(dataId: DataId): void {
     if (!this.registeredArrays.has(dataId)) {
       return;
     }

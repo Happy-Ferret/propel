@@ -32,7 +32,7 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
-  private data: {[dataId: number]: DataTypeMap[DataType]} = {};
+  private dataMap: WeakMap<Symbol, DataTypeMap[DataType]> = new WeakMap();
   private canvas: HTMLCanvasElement;
 
   constructor() {
@@ -41,18 +41,18 @@ export class MathBackendCPU implements MathBackend {
     }
   }
 
-  register(dataId: number, shape: number[], dtype: DataType): void {
-    this.data[dataId] = null;
+  register(dataId: Symbol, shape: number[], dtype: DataType): void {
+    this.dataMap.set(dataId, null);
   }
-  write<D extends DataType>(dataId: number, values: DataTypeMap[D]): void {
+  write<D extends DataType>(dataId: Symbol, values: DataTypeMap[D]): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
     this.throwIfNoData(dataId);
-    this.data[dataId] = values;
+    this.dataMap.set(dataId, values);
   }
   writePixels(
-      dataId: number,
+      dataId: Symbol,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     if (pixels == null) {
@@ -97,26 +97,26 @@ export class MathBackendCPU implements MathBackend {
         }
       }
     }
-    this.data[dataId] = values;
+    this.dataMap.set(dataId, values);
   }
-  async read<D extends DataType>(dataId: number): Promise<DataTypeMap[D]> {
+  async read<D extends DataType>(dataId: Symbol): Promise<DataTypeMap[D]> {
     this.throwIfNoData(dataId);
-    return this.data[dataId];
+    return this.dataMap.get(dataId);
   }
-  readSync<D extends DataType>(dataId: number): DataTypeMap[D] {
+  readSync<D extends DataType>(dataId: Symbol): DataTypeMap[D] {
     this.throwIfNoData(dataId);
-    return this.data[dataId];
+    return this.dataMap.get(dataId);
   }
-  disposeData(dataId: number): void {
-    delete this.data[dataId];
+  disposeData(dataId: Symbol): void {
+    this.dataMap.delete(dataId);
   }
   async time(query: () => NDArray): Promise<number> {
     const start = performance.now();
     query();
     return performance.now() - start;
   }
-  private throwIfNoData(dataId: number) {
-    if (!(dataId in this.data)) {
+  private throwIfNoData(dataId: Symbol) {
+    if (!this.dataMap.has(dataId)) {
       throw new Error(
           `No data found for NDArray with data id ${dataId}. ` +
           `Use dl.ENV.math instead of constructing your own NDArrayMath. ` +
