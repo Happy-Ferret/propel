@@ -17,13 +17,14 @@
 
 import * as test_util from '../../test_util';
 import {Tests} from '../../test_util';
+import {DataId} from '../ndarray';
 import {MathBackendWebGL} from './backend_webgl';
 
 const tests: Tests = () => {
   it('reading', () => {
     const backend = new MathBackendWebGL(null);
     const texManager = backend.getTextureManager();
-    const id = Symbol();
+    const id = new DataId();
     backend.register(id, [3], 'float32');
     backend.write(id, new Float32Array([1, 2, 3]));
     expect(texManager.getNumUsedTextures()).toBe(0);
@@ -41,7 +42,7 @@ const tests: Tests = () => {
   it('overwriting', () => {
     const backend = new MathBackendWebGL(null);
     const texManager = backend.getTextureManager();
-    const id = Symbol();
+    const id = new DataId();
     backend.register(id, [3], 'float32');
     backend.write(id, new Float32Array([1, 2, 3]));
     backend.getTexture(id);
@@ -61,8 +62,8 @@ const tests: Tests = () => {
    it('disposal of backend disposes all textures', () => {
     const backend = new MathBackendWebGL(null);
     const texManager = backend.getTextureManager();
-    const id1 = Symbol();
-    const id2 = Symbol();
+    const id1 = new DataId();
+    const id2 = new DataId();
     backend.register(id1, [3], 'float32');
     backend.write(id1, new Float32Array([1, 2, 3]));
     backend.getTexture(id1); // Forces upload to GPU.

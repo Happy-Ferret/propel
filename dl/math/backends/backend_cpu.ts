@@ -23,7 +23,7 @@ import * as broadcast_util from '../broadcast_util';
 import * as concat_util from '../concat_util';
 import {Conv2DInfo} from '../conv_util';
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array2D, Array3D, Array4D, DataType, DataTypeMap, NDArray, Rank, Scalar} from '../ndarray';
+import {Array1D, Array2D, Array3D, Array4D, DataId, DataType, DataTypeMap, NDArray, Rank, Scalar} from '../ndarray';
 import * as types from '../types';
 import {SumTypes, SumTypesMap} from '../types';
 
@@ -32,7 +32,7 @@ import {MathBackend} from './backend';
 import {MatrixOrientation} from './types/matmul';
 
 export class MathBackendCPU implements MathBackend {
-  private dataMap: WeakMap<Symbol, DataTypeMap[DataType]> = new WeakMap();
+  private dataMap: WeakMap<DataId, DataTypeMap[DataType]> = new WeakMap();
   private canvas: HTMLCanvasElement;
 
   constructor() {
@@ -41,10 +41,10 @@ export class MathBackendCPU implements MathBackend {
     }
   }
 
-  register(dataId: Symbol, shape: number[], dtype: DataType): void {
+  register(dataId: DataId, shape: number[], dtype: DataType): void {
     this.dataMap.set(dataId, null);
   }
-  write<D extends DataType>(dataId: Symbol, values: DataTypeMap[D]): void {
+  write<D extends DataType>(dataId: DataId, values: DataTypeMap[D]): void {
     if (values == null) {
       throw new Error('MathBackendCPU.write(): values can not be null');
     }
@@ -52,7 +52,7 @@ export class MathBackendCPU implements MathBackend {
     this.dataMap.set(dataId, values);
   }
   writePixels(
-      dataId: Symbol,
+      dataId: DataId,
       pixels: ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement,
       numChannels: number): void {
     if (pixels == null) {
@@ -99,15 +99,15 @@ export class MathBackendCPU implements MathBackend {
     }
     this.dataMap.set(dataId, values);
   }
-  async read<D extends DataType>(dataId: Symbol): Promise<DataTypeMap[D]> {
+  async read<D extends DataType>(dataId: DataId): Promise<DataTypeMap[D]> {
     this.throwIfNoData(dataId);
     return this.dataMap.get(dataId);
   }
-  readSync<D extends DataType>(dataId: Symbol): DataTypeMap[D] {
+  readSync<D extends DataType>(dataId: DataId): DataTypeMap[D] {
     this.throwIfNoData(dataId);
     return this.dataMap.get(dataId);
   }
-  disposeData(dataId: Symbol): void {
+  disposeData(dataId: DataId): void {
     this.dataMap.delete(dataId);
   }
   async time(query: () => NDArray): Promise<number> {
@@ -115,7 +115,7 @@ export class MathBackendCPU implements MathBackend {
     query();
     return performance.now() - start;
   }
-  private throwIfNoData(dataId: Symbol) {
+  private throwIfNoData(dataId: DataId) {
     if (!this.dataMap.has(dataId)) {
       throw new Error(
           `No data found for NDArray with data id ${dataId}. ` +
